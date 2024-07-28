@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "Click Logger",
+  "version": "1.0",
+  "permissions": [
+    "activeTab"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"]
+    }
+  ],
+  "action": {
+    "default_icon": "icons/xlang.png"
+  },
+  "icons": {
+    "48": "icons/xlang.png"
+  }
+}
