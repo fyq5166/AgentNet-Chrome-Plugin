@@ -1,30 +1,48 @@
-// plugin console here (including messaging records)
-
-// listen for messages sent from the browser extension
-
-chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
+// The script listen for messages from content
+chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
+  // Listen for click messages
   if (message.type === "click") {
-    console.log('Received click data:', message.data);
-    
-    // send message to port 3000
+    console.log('Received click event:', message.data);
+    sendResponse({ status: 'success', data: 'Click event recorded' });
+
+    // Send click data to server
     fetch('http://localhost:3000/log', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(message.data)
+      body: JSON.stringify({ type: 'click', data: message.data })
     })
     .then(response => response.text())
     .then(data => {
-      console.log('Data sent to server:', data);
-      // back to content.js
-      sendResponse({status: 'success', data: data});
+      console.log('Click data sent to server:', data);
     })
     .catch(error => {
-      console.error('Error sending data:', error);
-      sendResponse({status: 'error', message: error.message});
+      console.error('Error sending click data:', error);
     });
 
-    return true; // Required to keep the sendResponse callback valid
+  } 
+  // Listen for page info messages
+  else if (message.type === "pageInfo") {
+    console.log('Received page info:', message.data);
+
+    // Send page info to server
+    fetch('http://localhost:3000/log', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ type: 'pageInfo', data: message.data })
+    })
+    .then(response => response.text())
+    .then(data => {
+      console.log('Page info sent to server:', data);
+    })
+    .catch(error => {
+      console.error('Error sending page info:', error);
+    });
+
+    sendResponse({ status: 'success', data: message.data });
   }
+  return true; // Required to keep the sendResponse callback valid
 });
