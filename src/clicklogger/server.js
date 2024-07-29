@@ -29,15 +29,15 @@ const writeLogFile = (data) => {
 // Process data received from background 
 app.post('/log', (req, res) => {
     const logData = req.body;
-    console.log('Received data:', logData);
+    // console.log('Received data:', logData);
   
     const currentLog = readLogFile();
   
     currentLog.push(logData);
     writeLogFile(currentLog); 
     res.status(200).send('Data received and logged');
-  });
+});
 
 app.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}`);
+    // console.log(`Server running at http://localhost:${port}`);
 });

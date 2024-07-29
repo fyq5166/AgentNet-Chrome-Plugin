@@ -1,12 +1,15 @@
 # AgentNet-Chrome-Plugin
+
 Add Chrome Support for AgentNet
 
-Setup Instruction:
-The plugin uses node to create server
+### Setup Instruction:
+
+The plugin uses **node** to create server
 To init and setup plugin:
-    1. install ndoe
-    2. npm init -y
-    3. npm install express cors
-    4. node server.js
+
+1. npm init -y
+2. npm install express cors
+3. node server.js
+
 If one-time setup is required:
-    nohup node server.js > server.log 2>&1 &
+- nohup node server.js > server.log 2>&1 &

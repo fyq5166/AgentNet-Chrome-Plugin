@@ -5,7 +5,7 @@ let lastUrl = '';
 
 // Function to send information to the server
 const sendInfo = (type, data, callback) => {
-  console.log(`Preparing to send ${type} data...`);
+  // console.log(`Preparing to send ${type} data...`);
   fetch('http://localhost:3000/log', {
     method: 'POST',
     headers: {
@@ -15,7 +15,7 @@ const sendInfo = (type, data, callback) => {
   })
   .then(response => response.text())
   .then(data => {
-    console.log(`Data sent to server (${type}):`, data);
+    // console.log(`Data sent to server (${type}):`, data);
     if (callback) {
       callback({ status: 'success', data: data });
     }
@@ -34,7 +34,7 @@ const checkAndSendPageInfo = () => {
   const currentUrl = window.location.href;
 
   if (currentUrl !== lastUrl || currentHtml !== lastHtml) {
-    console.log('URL or HTML changed');
+    // console.log('URL or HTML changed');
     lastHtml = currentHtml;
     lastUrl = currentUrl;
 
@@ -43,10 +43,10 @@ const checkAndSendPageInfo = () => {
       url: currentUrl
     };
 
-    console.log('Page info:', pageInfo);
+    // console.log('Page info:', pageInfo);
 
     chrome.runtime.sendMessage({ type: "pageInfo", data: pageInfo }, function (response) {
-      console.log('Page info sent to background:', response);
+      // console.log('Page info sent to background:', response);
     });
   }
 };
@@ -68,11 +68,11 @@ document.addEventListener('click', function (event) {
     class: element.className,
     text: element.innerText,
   };
-  console.log('Clicked element:', elementInfo);
+  // console.log('Clicked element:', elementInfo);
 
   // Send click event to background
   chrome.runtime.sendMessage({ type: "click", data: elementInfo }, function (response) {
-    console.log('Click event sent to background:', response);
+    // console.log('Click event sent to background:', response);
   });
 
   // Check and send page info after a click

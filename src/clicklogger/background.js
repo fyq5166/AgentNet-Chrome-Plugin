@@ -2,7 +2,7 @@
 chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
   // Listen for click messages
   if (message.type === "click") {
-    console.log('Received click event:', message.data);
+    // console.log('Received click event:', message.data);
     sendResponse({ status: 'success', data: 'Click event recorded' });
 
     // Send click data to server
@@ -15,7 +15,7 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
     })
     .then(response => response.text())
     .then(data => {
-      console.log('Click data sent to server:', data);
+      // console.log('Click data sent to server:', data);
     })
     .catch(error => {
       console.error('Error sending click data:', error);
@@ -24,7 +24,7 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
   } 
   // Listen for page info messages
   else if (message.type === "pageInfo") {
-    console.log('Received page info:', message.data);
+    // console.log('Received page info:', message.data);
 
     // Send page info to server
     fetch('http://localhost:3000/log', {
