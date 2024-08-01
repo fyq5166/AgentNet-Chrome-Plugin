@@ -46,3 +46,7 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
   }
   return true; // Required to keep the sendResponse callback valid
 });
+
+chrome.tabs.onCreated.addListener((tab) => {
+  chrome.runtime.sendMessage({ type: "pageInfo", data: pageInfo });
+});

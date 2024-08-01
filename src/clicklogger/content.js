@@ -38,7 +38,6 @@ document.addEventListener('click', function (event) {
     class: element.className,
     text: element.innerText,
   };
-
   // Send click event to background
   chrome.runtime.sendMessage({ type: "click", data: elementInfo });
 

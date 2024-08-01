@@ -22,6 +22,5 @@
   },
   "icons": {
     "48": "icons/xlang.png"
-  },
-  "run_at": "document_start"
+  }
 }
