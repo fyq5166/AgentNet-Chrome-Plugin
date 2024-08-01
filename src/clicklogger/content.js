@@ -3,30 +3,6 @@ console.log('Content script loaded.');
 let lastHtml = '';
 let lastUrl = '';
 
-// Function to send information to the server
-const sendInfo = (type, data, callback) => {
-  // console.log(`Preparing to send ${type} data...`);
-  fetch('http://localhost:3000/log', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ type, data })
-  })
-  .then(response => response.text())
-  .then(data => {
-    // console.log(`Data sent to server (${type}):`, data);
-    if (callback) {
-      callback({ status: 'success', data: data });
-    }
-  })
-  .catch(error => {
-    console.error(`Error sending ${type} data:`, error);
-    if (callback) {
-      callback({ status: 'error', message: error.message });
-    }
-  });
-};
 
 // Function to check and send page info if HTML or URL changed
 const checkAndSendPageInfo = () => {
@@ -34,7 +10,6 @@ const checkAndSendPageInfo = () => {
   const currentUrl = window.location.href;
 
   if (currentUrl !== lastUrl || currentHtml !== lastHtml) {
-    // console.log('URL or HTML changed');
     lastHtml = currentHtml;
     lastUrl = currentUrl;
 
@@ -42,12 +17,7 @@ const checkAndSendPageInfo = () => {
       html: currentHtml,
       url: currentUrl
     };
-
-    // console.log('Page info:', pageInfo);
-
-    chrome.runtime.sendMessage({ type: "pageInfo", data: pageInfo }, function (response) {
-      // console.log('Page info sent to background:', response);
-    });
+    chrome.runtime.sendMessage({ type: "pageInfo", data: pageInfo });
   }
 };
 
@@ -68,12 +38,9 @@ document.addEventListener('click', function (event) {
     class: element.className,
     text: element.innerText,
   };
-  // console.log('Clicked element:', elementInfo);
 
   // Send click event to background
-  chrome.runtime.sendMessage({ type: "click", data: elementInfo }, function (response) {
-    // console.log('Click event sent to background:', response);
-  });
+  chrome.runtime.sendMessage({ type: "click", data: elementInfo });
 
   // Check and send page info after a click
   checkAndSendPageInfo();

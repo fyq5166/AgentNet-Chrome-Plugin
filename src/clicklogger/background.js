@@ -6,7 +6,7 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
     sendResponse({ status: 'success', data: 'Click event recorded' });
 
     // Send click data to server
-    fetch('http://localhost:3000/log', {
+    fetch('http://localhost:5328/api/browser/append_element', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -15,7 +15,7 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
     })
     .then(response => response.text())
     .then(data => {
-      // console.log('Click data sent to server:', data);
+      console.log('Click data sent to server:', data);
     })
     .catch(error => {
       console.error('Error sending click data:', error);
@@ -27,7 +27,7 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
     // console.log('Received page info:', message.data);
 
     // Send page info to server
-    fetch('http://localhost:3000/log', {
+    fetch('http://localhost:5328/api/browser/append_html', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
