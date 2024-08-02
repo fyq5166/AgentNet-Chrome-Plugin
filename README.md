@@ -4,12 +4,6 @@ Add Chrome Support for AgentNet
 
 ### Setup Instruction:
 
-The plugin uses **node** to create server
-To init and setup plugin:
+The plugin uses AgentNet's backend (on port 5328).
 
-1. npm init -y
-2. npm install express cors
-3. node server.js
-
-If one-time setup is required:
-- nohup node server.js > server.log 2>&1 &
+Please use Goole Chrome Dev to load the unpacked extension.
