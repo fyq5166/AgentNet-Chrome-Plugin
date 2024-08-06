@@ -4,6 +4,14 @@ Add Chrome Support for AgentNet
 
 ### Setup Instruction:
 
-The plugin uses AgentNet's backend (on port 5328).
+Please use **Goole Chrome Dev** to load the unpacked extension and complete your workflow.
 
-Please use Goole Chrome Dev to load the unpacked extension.
+You should download the unpacked extension first:
+
+```bash
+$ git clone https://github.com/fyq5166/AgentNet-Chrome-Plugin.git
+```
+
+<img src="readme_images/load.png" style="zoom: 30%;" />
+
+<img src="readme_images/load2.png" style="zoom: 30%;" />
