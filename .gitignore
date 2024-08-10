@@ -32,5 +32,4 @@ dist/
 # vscode
 .vscode/
 
-# logData
-logData.json
+*.zip
