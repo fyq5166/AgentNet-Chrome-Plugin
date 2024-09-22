@@ -8,6 +8,7 @@ const INTERESTING_TAGS = [
   "img",
 ];
 
+//todo why unused?
 function isVisible(element) {
   // Returns true if `element` is visible in the viewport, false otherwise.
   const rect = element.getBoundingClientRect();
@@ -34,6 +35,9 @@ function isVisible(element) {
 function getXPath(element) {
   // Returns an XPath for an element which describes its hierarchical location in the DOM.
   if (element && element.id) {
+    //Scott- I'm concerned about this because my team at OSU found that, in practice, some sites give elements
+    // id's that are unique within the page but have a dynamically-generated random suffix of letters and/or numbers
+    // which might make the id unreliable for identifying the element in the future.
     return "//*[@id='" + element.id + "']";
   } else {
     let segments = [];
@@ -82,11 +86,21 @@ function getElementByXPath(xpath) {
   return result.singleNodeValue;
 }
 
-function getAllMatchingElements(querySelector) {
+function getAllMatchingElements(querySelector, searchRoot = document) {
   // Given a `querySelector`, returns a list of objects describing the elements matched by document.querySelectorAll(querySelector).
-  const elementsData = [];
 
-  document.querySelectorAll(querySelector).forEach((element) => {
+  const elementsDataSegments = [];
+
+  const possibleShadowRootHosts = searchRoot.querySelectorAll("*");
+  const shadowRootsOfChildren = possibleShadowRootHosts.map(elem => elem.shadowRoot).filter(Boolean);
+
+  shadowRootsOfChildren.forEach((shadowRoot) => {
+    const shadowRootElements = getAllMatchingElements(querySelector, shadowRoot);
+    elementsDataSegments.push(shadowRootElements);
+  });
+
+  const elementsData = [];
+  searchRoot.querySelectorAll(querySelector).forEach((element) => {
     // if (isVisible(element)) {
     const rect = element.getBoundingClientRect();
     const xpath = getXPath(element);
@@ -110,8 +124,12 @@ function getAllMatchingElements(querySelector) {
     });
     // }
   });
-
-  return elementsData;
+  let allElementsData = elementsData;
+  if (elementsDataSegments) {
+    elementsDataSegments.push(elementsData);
+    allElementsData = elementsDataSegments.flat();
+  }
+  return allElementsData;
 }
 
 /**
@@ -243,11 +261,14 @@ function removeLabels() {
 }
 
 function generateJSONState(elementsData) {
+  const viewportWidth = window.width
+  const viewportHeight = window.height;
+
   // Given a list of elements, generate a JSON string representing the state of the page.
   const filteredElementsData = elementsData
     .filter((data) => {
       // Ignore things off screen
-      if (data.x < 0 || data.y < 0) {
+      if (data.x < 0 || data.y < 0 || data.x + data.width > viewportWidth || data.y + data.height > viewportHeight) {
         return false;
       }
       // Ignore things with no text, label, etc. that aren't interesting tags
@@ -268,6 +289,10 @@ function generateJSONState(elementsData) {
         y: Math.round(data.y),
         height: Math.round(data.height),
         width: Math.round(data.width),
+        normX: data.x / viewportWidth,
+        normY: data.y / viewportHeight,
+        normHeight: data.height / viewportHeight,
+        normWidth: data.width / viewportWidth,
         // Attributes
         text: data.text,
         label: data.label,
