@@ -6,6 +6,7 @@ let lastUrl = "";
 // Function to check and send page info if HTML or URL changed
 const checkAndSendPageInfo = () => {
   const currentHtml = document.body.innerHTML;
+  const currentPgTitle = document.title;
   const dom = getWebpageState();
   const currentUrl = window.location.href;
 
@@ -17,6 +18,7 @@ const checkAndSendPageInfo = () => {
       html: currentHtml,
       dom: dom,
       url: currentUrl,
+      title: currentPgTitle
     };
     chrome.runtime.sendMessage({ type: "pageInfo", data: pageInfo });
   }

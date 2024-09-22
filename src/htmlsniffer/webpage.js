@@ -91,7 +91,7 @@ function getAllMatchingElements(querySelector, searchRoot = document) {
 
   const elementsDataSegments = [];
 
-  const possibleShadowRootHosts = searchRoot.querySelectorAll("*");
+  const possibleShadowRootHosts = Array.from(searchRoot.querySelectorAll("*"));
   const shadowRootsOfChildren = possibleShadowRootHosts.map(elem => elem.shadowRoot).filter(Boolean);
 
   shadowRootsOfChildren.forEach((shadowRoot) => {
