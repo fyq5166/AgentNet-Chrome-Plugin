@@ -31,19 +31,20 @@ async function getActiveTabAxTree() {
     return axTree;
 }
 
-async function sendDataBatchToLocalBackend(dataBatch, batchType, backendEndpoint) {
+async function sendDataBatchToLocalBackend(dataBatch, batchTimestamps, batchType, backendEndpoint) {
   let axTree = undefined;
   try {
     axTree = await getActiveTabAxTree();
   } catch (error) {
     console.error('Error getting active tab accessibility tree:', error);
   }
+  batchTimestamps.backgroundScriptSendingToLocalBackend = new Date().toISOString();
   const backendResp = await fetch(`http://localhost:5328/api/browser/${backendEndpoint}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({ type: batchType, data: dataBatch, pageAxTree: axTree })
+    body: JSON.stringify({ type: batchType, data: dataBatch, pageAxTree: axTree, timestamps: batchTimestamps })
   });
   const respMsg = await backendResp.text();
   console.info(`${batchType} Data batch sent to backend: ${respMsg}`);
@@ -51,19 +52,24 @@ async function sendDataBatchToLocalBackend(dataBatch, batchType, backendEndpoint
 
 // The script listen for messages from content
 chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
+  const dataBatchTimestamps = {
+    click: message.clickTs, pgSnapshotStart: message.pageInfoSnapshotStartTs,
+    pgSnapshotEnd: message.pageInfoSnapshotEndTs, backgroundScriptReceived: new Date().toISOString()
+  }
+
   // Listen for click messages
   if (message.type === "click") {
     // console.log('Received click event:', message.data);
     sendResponse({ status: 'success', data: 'Click event recorded' });
 
-    sendDataBatchToLocalBackend(message.data, 'click', 'append_element')
+    sendDataBatchToLocalBackend(message.data, dataBatchTimestamps, 'click', 'append_element')
         .catch(error => console.error('Error sending click data:', error));
   } 
   // Listen for page info messages
   else if (message.type === "pageInfo") {
     // console.log('Received page info:', message.data);
 
-    sendDataBatchToLocalBackend(message.data, 'pageInfo', 'append_html')
+    sendDataBatchToLocalBackend(message.data, dataBatchTimestamps, 'pageInfo', 'append_html')
         .catch(error => console.error('Error sending page info data:', error));
 
     //todo can we please consider not transmitting the large html data back to the content script?
