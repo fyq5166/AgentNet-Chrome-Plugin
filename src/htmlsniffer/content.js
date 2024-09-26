@@ -4,21 +4,39 @@ let lastHtml = "";
 let lastUrl = "";
 
 // Function to check and send page info if HTML or URL changed
-const checkAndSendPageInfo = () => {
+/**
+ * Check and send page info if HTML or URL changed
+ * @param clickTs ISO timestamp string of a click event that triggered this check for updated page info
+ *                  usually null (for when this is triggered periodically rather than in response to a click)
+ */
+const checkAndSendPageInfo = (clickTs = null) => {
   const currentHtml = document.body.innerHTML;
-  const dom = getWebpageState();
+  const currentPgTitle = document.title;
   const currentUrl = window.location.href;
 
+  //todo query- should we also send page info if this is for a click event, even if the url/html are the same as before?
   if (currentUrl !== lastUrl || currentHtml !== lastHtml) {
     lastHtml = currentHtml;
     lastUrl = currentUrl;
 
+    let pageInfoSnapshotStartTs = null;
+    if (clickTs === null) {
+      pageInfoSnapshotStartTs = new Date().toISOString();
+    }
+
+    const dom = getWebpageState();
     const pageInfo = {
       html: currentHtml,
       dom: dom,
       url: currentUrl,
+      title: currentPgTitle
     };
-    chrome.runtime.sendMessage({ type: "pageInfo", data: pageInfo });
+    const pageInfoSnapshotEndTs = new Date().toISOString();
+    chrome.runtime.sendMessage(
+      {
+        type: "pageInfo", clickTs: clickTs, pageInfoSnapshotStartTs: pageInfoSnapshotStartTs,
+        pageInfoSnapshotEndTs: pageInfoSnapshotEndTs, data: pageInfo
+      });
   }
 };
 
@@ -32,6 +50,8 @@ setInterval(() => {
 
 // Listen for click events
 document.addEventListener("click", function (event) {
+  const clickTs = new Date().toISOString();
+
   const element = event.target;
   const elementInfo = {
     tag: element.tagName,
@@ -40,8 +60,8 @@ document.addEventListener("click", function (event) {
     text: element.innerText,
   };
   // Send click event to background
-  chrome.runtime.sendMessage({ type: "click", data: elementInfo });
+  chrome.runtime.sendMessage({ type: "click", clickTs: clickTs, data: elementInfo });
 
   // Check and send page info after a click
-  checkAndSendPageInfo();
+  checkAndSendPageInfo(clickTs);
 });
