@@ -1,4 +1,4 @@
-async function getActiveTab() {
+async function getActiveTab(): Promise<chrome.tabs.Tab|undefined> {
   let currTab = undefined;
   const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
   if (tabs.length === 0) {
@@ -31,7 +31,15 @@ async function getActiveTabAxTree() {
     return axTree;
 }
 
-async function sendDataBatchToLocalBackend(dataBatch, batchTimestamps, batchType, backendEndpoint) {
+type BatchTimestamps = {
+    click: string,
+    pgSnapshotStart: string,
+    pgSnapshotEnd: string,
+    backgroundScriptReceived: string,
+    backgroundScriptSendingToLocalBackend?: string
+}
+
+async function sendDataBatchToLocalBackend(dataBatch: any, batchTimestamps: BatchTimestamps, batchType: string, backendEndpoint: string) {
   let axTree = undefined;
   try {
     axTree = await getActiveTabAxTree();
@@ -52,7 +60,7 @@ async function sendDataBatchToLocalBackend(dataBatch, batchTimestamps, batchType
 
 // The script listen for messages from content
 chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
-  const dataBatchTimestamps = {
+  const dataBatchTimestamps: BatchTimestamps = {
     click: message.clickTs, pgSnapshotStart: message.pageInfoSnapshotStartTs,
     pgSnapshotEnd: message.pageInfoSnapshotEndTs, backgroundScriptReceived: new Date().toISOString()
   }

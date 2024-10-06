@@ -1,3 +1,5 @@
+import {getWebpageState} from "./webpage";
+
 console.log("Content script loaded.");
 
 let lastHtml = "";
@@ -9,7 +11,7 @@ let lastUrl = "";
  * @param clickTs ISO timestamp string of a click event that triggered this check for updated page info
  *                  usually null (for when this is triggered periodically rather than in response to a click)
  */
-const checkAndSendPageInfo = (clickTs = null) => {
+const checkAndSendPageInfo = (clickTs: string|null = null) => {
   const currentHtml = document.body.innerHTML;
   const currentPgTitle = document.title;
   const currentUrl = window.location.href;
@@ -53,6 +55,10 @@ document.addEventListener("click", function (event) {
   const clickTs = new Date().toISOString();
 
   const element = event.target;
+  if (!(element instanceof HTMLElement)) {
+    console.error(`the target of a click at time ${clickTs} wasn't an HTML element! `);
+    return;
+  }
   const elementInfo = {
     tag: element.tagName,
     id: element.id,

@@ -9,7 +9,7 @@ const INTERESTING_TAGS = [
 ];
 
 //todo why unused?
-function isVisible(element) {
+function isVisible(element: HTMLElement) {
   // Returns true if `element` is visible in the viewport, false otherwise.
   const rect = element.getBoundingClientRect();
   const isNonZeroArea = rect.width > 0 && rect.height > 0;
@@ -32,7 +32,8 @@ function isVisible(element) {
   );
 }
 
-function getXPath(element) {
+//todo consider replacing this homemade version with npm get-xpath or with the shadow-root/same-origin-iframe-piercing version from OSU NLP Group's extension
+function getXPath(element: HTMLElement|null) {
   // Returns an XPath for an element which describes its hierarchical location in the DOM.
   if (element && element.id) {
     //Scott- I'm concerned about this because my team at OSU found that, in practice, some sites give elements
@@ -48,7 +49,7 @@ function getXPath(element) {
         sibling;
         sibling = sibling.previousSibling
       ) {
-        if (sibling.nodeType === 1 && sibling.tagName === element.tagName)
+        if (sibling.nodeType === 1 && 'tagName' in sibling && sibling.tagName === element.tagName)
           siblingIndex++;
       }
       let tagName = element.tagName.toLowerCase();
@@ -58,13 +59,13 @@ function getXPath(element) {
           ? "[" + siblingIndex + "]"
           : "");
       segments.unshift(segment);
-      element = element.parentNode;
+      element = element.parentNode instanceof HTMLElement ? element.parentNode : null;
     }
     return segments.length ? "/" + segments.join("/") : null;
   }
 }
 
-function getParents(element) {
+function getParents(element: HTMLElement|null) {
   // Get list of parent elements for `element`.
   let parents = [];
   while (element) {
@@ -74,7 +75,7 @@ function getParents(element) {
   return parents;
 }
 
-function getElementByXPath(xpath) {
+function getElementByXPath(xpath: string): Node|null {
   // Returns the unique element matching the `xpath` expression.
   const result = document.evaluate(
     xpath,
@@ -86,22 +87,37 @@ function getElementByXPath(xpath) {
   return result.singleNodeValue;
 }
 
-function getAllMatchingElements(querySelector, searchRoot = document) {
+type ElementData = {
+  element: HTMLElement,
+  xpath: string|null,
+  x: number,
+  y: number,
+  height: number,
+  width: number,
+  text: string,
+  tag: string,
+  role: string|null,
+  type: string|null,
+  label: string|null,
+}
+
+function getAllMatchingElements(querySelector: string, searchRoot: ShadowRoot|Document = document): ElementData[] {
   // Given a `querySelector`, returns a list of objects describing the elements matched by document.querySelectorAll(querySelector).
 
-  const elementsDataSegments = [];
+  const elementsDataSegments: Array<Array<ElementData>> = [];
 
   const possibleShadowRootHosts = Array.from(searchRoot.querySelectorAll("*"));
-  const shadowRootsOfChildren = possibleShadowRootHosts.map(elem => elem.shadowRoot).filter(Boolean);
+  const shadowRootsOfChildren = possibleShadowRootHosts.map(elem => elem.shadowRoot).filter(Boolean) as ShadowRoot[];
 
   shadowRootsOfChildren.forEach((shadowRoot) => {
     const shadowRootElements = getAllMatchingElements(querySelector, shadowRoot);
     elementsDataSegments.push(shadowRootElements);
   });
 
-  const elementsData = [];
+  const elementsData: ElementData[] = [];
   searchRoot.querySelectorAll(querySelector).forEach((element) => {
     // if (isVisible(element)) {
+    if (!(element instanceof HTMLElement)) { return; }
     const rect = element.getBoundingClientRect();
     const xpath = getXPath(element);
     const parents = getParents(element);
@@ -117,9 +133,9 @@ function getAllMatchingElements(querySelector, searchRoot = document) {
       width: rect.width,
       // Attributes
       text: element.innerText,
+      tag: element.tagName.toLowerCase(),
       role: element.getAttribute("role"),
       type: element.getAttribute("type"),
-      tag: element.tagName.toLowerCase(),
       label: element.getAttribute("aria-label"),
     });
     // }
@@ -146,13 +162,14 @@ border: 1px solid #e00fdf !important;
 document.head.appendChild(style);
 
 // Draw boxes around each element
-function drawBoundingBoxes(elementsData) {
+function drawBoundingBoxes(elementsData: ElementData[]) {
   var BreakException = {};
   elementsData.forEach((data) => {
+    if (!data.xpath) { return; }
     try {
-      const $element = getElementByXPath(data.xpath);
-      if ($element) {
-        $element.classList.add("llm-agent-box");
+      const element = getElementByXPath(data.xpath);
+      if (element && element instanceof HTMLElement) {
+        element.classList.add("llm-agent-box");
       } else {
       }
     } catch {
@@ -169,8 +186,15 @@ function removeBoundingBoxes() {
   });
 }
 
+type Box = {
+  x: number,
+  y: number,
+  width: number,
+  height: number
+}
+
 // Define a bounding box as { x: 0, y: 0, width: 0, height: 0 }
-function intersectionArea(boxA, boxB) {
+function intersectionArea(boxA: Box, boxB: Box) {
   const xOverlap = Math.max(
     0,
     Math.min(boxA.x + boxA.width, boxB.x + boxB.width) -
@@ -184,11 +208,11 @@ function intersectionArea(boxA, boxB) {
   return xOverlap * yOverlap;
 }
 
-function boxArea(box) {
+function boxArea(box: Box) {
   return box.width * box.height;
 }
 
-function overlapRatio(boxA, boxB) {
+function overlapRatio(boxA: Box, boxB: Box) {
   // Calculate the overlap ratio between two bounding boxes (boxA and boxB)
   const intersection = intersectionArea(boxA, boxB);
   const union = boxArea(boxA) + boxArea(boxB) - intersection;
@@ -197,26 +221,32 @@ function overlapRatio(boxA, boxB) {
 /**
  * Helper functions for drawing labels on bounding boxes
  */
-
-function onLabelMouseOverShowBoundingBox($labelElement) {
+function onLabelMouseOverShowBoundingBox(labelElement: HTMLElement) {
   // When a label is moused over, show its corresponding bounding box
-  const xpath = $labelElement.attributes["elementsData-xpath"];
-  const $element = getElementByXPath(xpath);
-  if ($element) {
-    $element.classList.add("llm-agent-box");
+  // @ts-ignore TS7015 -- I (while converting existing code to Typescript) don't know if a simple getAttribute() call would be equivalent, so I can't get around this
+  const xpath = labelElement.attributes["elementsData-xpath"];
+  if (typeof xpath !== "string") {
+    console.warn("an element's `elementsData-xpath` value was not of type string");
+    return;
+  }
+  const element = getElementByXPath(xpath);
+  if (element && element instanceof HTMLElement) {
+    element.classList.add("llm-agent-box");
   }
 }
-function onLabelMouseOutHideBoundingBox($labelElement) {
+function onLabelMouseOutHideBoundingBox(labelElement: HTMLElement) {
   // When a label is moused out, hide its corresponding bounding box
-  const xpath = $labelElement.attributes["elementsData-xpath"];
-  const $element = getElementByXPath(xpath);
-  if ($element) {
-    $element.classList.remove("llm-agent-box");
+  // @ts-ignore TS7015 -- I (while converting existing code to Typescript) don't know if a simple getAttribute() call would be equivalent, so I can't get around this
+  const xpath = labelElement.attributes["elementsData-xpath"];
+  const element = getElementByXPath(xpath);
+  if (element && element instanceof HTMLElement) {
+    element.classList.remove("llm-agent-box");
   }
 }
-function addLabels(elementsData) {
+function addLabels(elementsData: ElementData[]) {
   // Given a list of elements with bounding boxes, add a label above each element on the webpage to visualize labels.
   elementsData.forEach((data, idx) => {
+    if (!data.xpath) { return; }
     // Get the element using XPath
     const element = getElementByXPath(data.xpath);
     if (element) {
@@ -238,7 +268,9 @@ function addLabels(elementsData) {
       labelDiv.style.fontSize = "8px";
       labelDiv.style.zIndex = "10000";
       labelDiv.classList.add("llm-agent-box-label");
+      // @ts-ignore TS7015 -- I (converting existing code to typescript) don't know if there's a way to do this that avoids the "implicit any" complaints from using a string to access the NamedNodeMap
       labelDiv.attributes["elementsData-xpath"] = data.xpath;
+      // @ts-ignore TS7015 -- see previous ts-ignore comment's explanation
       labelDiv.attributes["elementsData-idx"] = idx;
 
       // Add event listener for hovering over the label
@@ -260,9 +292,9 @@ function removeLabels() {
     .forEach((element) => element.remove());
 }
 
-function generateJSONState(elementsData) {
-  const viewportWidth = window.width
-  const viewportHeight = window.height;
+function generateJSONState(elementsData: ElementData[]) {
+  const viewportWidth = window.innerWidth
+  const viewportHeight = window.innerHeight;
 
   // Given a list of elements, generate a JSON string representing the state of the page.
   const filteredElementsData = elementsData
@@ -304,11 +336,11 @@ function generateJSONState(elementsData) {
     });
   return JSON.stringify(filteredElementsData);
 }
-function truncate(text, n) {
+function truncate(text: string, n: number) {
   return text.length > n ? text.substr(0, n - 1) + "…" : text;
 }
 
-function filterOutNonAccessibleElements(elementsData) {
+function filterOutNonAccessibleElements(elementsData: ElementData[]) {
   // Filter out elements that are not accessible
   return elementsData.filter((data) => {
     // Valid if has at least one of...
@@ -339,7 +371,7 @@ function filterOutNonAccessibleElements(elementsData) {
   });
 }
 
-function filterOutOverlappingBoxes(elementsData, threshold) {
+function filterOutOverlappingBoxes(elementsData: ElementData[], threshold: number) {
   // `elementsData` must be a list of dicts with keys: x,y,height,width
   const toRemove = new Set();
 
@@ -382,7 +414,7 @@ function filterOutOverlappingBoxes(elementsData, threshold) {
 // Everything above should be copied from `chrome_extension/html_to_state.js`
 ////////////////////////
 
-function getWebpageState() {
+export function getWebpageState(): string {
   const allElements = getAllMatchingElements("body *");
   // const accessibilityElements = filterOutNonAccessibleElements(allElements);
   // const filteredElements = filterOutOverlappingBoxes(
