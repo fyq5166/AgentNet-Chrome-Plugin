@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "Click Logger",
+  "version": "1.1",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage",
+    "debugger"
+  ],
+  "background": {
+    "service_worker": "src/background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["src/webpage.js", "src/content.js"],
+      "type": "module"
+    }
+  ],
+  "action": {
+    "default_icon": "icons/xlang.png"
+  },
+  "icons": {
+    "48": "icons/xlang.png"
+  }
+}
